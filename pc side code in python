@@ -1,0 +1,37 @@
+import serial
+import time
+
+
+ser = serial.Serial('COM13', 2400, timeout=1) 
+data = input("Enter data to send: ").encode()
+
+data_bytes = len(data)
+
+start_pc_eeprom = time.time()
+
+ser.write(data_bytes.to_bytes(2, byteorder='big'))
+
+ser.write(data)
+
+end_pc_eeprom = time.time()
+
+time_pc_eeprom = end_pc_eeprom - start_pc_eeprom
+
+speed_pc_eeprom = (data_bytes * 8) / time_pc_eeprom  
+print("Transmission Speed (PC to EEPROM): {:.2f} bits/second\n".format(speed_pc_eeprom))
+
+bytes_to_write = int.from_bytes(ser.read(2), byteorder='big')
+
+start_eeprom_pc = time.time()
+
+r_data = ser.read(bytes_to_write)
+print(r_data.decode())
+
+end_eeprom_pc = time.time()
+
+t_eeprom_pc = end_eeprom_pc - start_eeprom_pc 
+
+speed_eeprom_pc = (bytes_to_write * 8) / (t_eeprom_pc*3)  
+print("\nTransmission Speed (EEPROM to PC): {:.2f} bits/second".format(speed_eeprom_pc))
+
+ser.close()
