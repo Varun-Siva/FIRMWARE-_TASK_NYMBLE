@@ -1,0 +1,49 @@
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define F_CPU 16000000UL 
+#define BAUD 2400        
+void uart_in() {
+    UBRR0 = F_CPU/16/BAUD - 1; 
+    UCSR0B |= (1<<TXEN0) | (1<<RXEN0); 
+    UCSR0C |= (1<<UCSZ01) | (1<<UCSZ00); 
+}
+
+void uart_trans(unsigned char data) {
+    while (!(UCSR0A & (1<<UDRE0))); 
+    UDR0 = data; 
+}
+
+unsigned char uart_r() {
+    while (!(UCSR0A & (1<<RXC0))); 
+    return UDR0; 
+}
+
+void eeprom_w(unsigned int address, unsigned char data) {
+    while (EECR & (1<<EEPE)); 
+    EEAR = address; 
+    EEDR = data;
+    EECR |= (1<<EEMPE);
+    EECR |= (1<<EEPE);
+}
+
+unsigned char eeprom_r(unsigned int address) {
+    while (EECR & (1<<EEPE)); 
+    EEAR = address;
+    EECR |= (1<<EERE); 
+    return EEDR;
+}
+
+int main() {
+    uart_in(); 
+    unsigned int eeprom_address = 0; 
+    unsigned int bytes_received = 0; 
+
+    while (1) {
+        unsigned char data = uart_r();
+        eeprom_w(eeprom_address++, data); 
+        bytes_received++; 
+        uart_trans(data); 
+    }
+    return 0;
+}
